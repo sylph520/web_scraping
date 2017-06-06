@@ -75,47 +75,56 @@ def next_page():
     print('************turn to next page')
 
 
-def get_onepage_pats(ret_data):
+def get_onepage_pats(ret_data, next_idx = 0):
     #    pat_blocks = []
-    pat_links_block = (driver.find_elements_by_xpath('//div[2]/h2/a'))
+    pat_links_block0 = (driver.find_elements_by_xpath('//div[2]/h2/a'))
+    pat_links_block = pat_links_block0[next_idx:]
     handle = driver.current_window_handle
     for pat_link_block in pat_links_block:
         pat_link = pat_link_block.get_attribute('href')
         time.sleep(3)
         pat_link_block.click()
         handles = driver.window_handles
+        print ("2 tabs\t %s" % handles)
         #        print(handles)
         driver.switch_to.window(handles[1])
         #        print(driver.current_window_handle)
-        print(driver.current_url)
+        print('now at the info page %s' %driver.current_url)
         current_items, current_ad = get_pat_data(pat_link)
         # handle pat pdf download
         download_page_elem = driver.find_element_by_xpath('/html/body/div[7]/div[1]/div/div[1]/table/tbody/tr[7]/td/div/a[2]')
         time.sleep(2)
         download_page_elem.click()
         handles = driver.window_handles
-        print (handles)
-        print("***")
-        print(driver.current_window_handle)
+        print ('3 tabs\t %s', handles)
+        print('current handle %s' %driver.current_window_handle)
         driver.switch_to.window(handles[2])
         download_url = driver.find_element_by_xpath('/html/body/table[1]/tbody/tr[3]/td[4]/a')
-        time.sleep(2)
-        download_url.click()
-        print("***")
-        print(driver.current_window_handle)
-        driver.switch_to.window(handle[1])
+        time.sleep(3)
+        try:
+            download_url.click()
+        except:
+            write_list = [1]
+            write_list.append(driver.current_url)
+            write_list.append()
+        print("current handle %s" %driver.current_window_handle)
+        driver.close()
+        driver.switch_to.window(handles[1])
+        print("current handle %s" % driver.current_window_handle)
         driver.close()
         driver.switch_to.window(handle)
         if (current_ad.year < 2015):
             print('%s is exceeding' % current_ad)
+            write_list = ['2']
             return False
         else:
+            next_idx += 1
             print(current_items)
             ret_data.append(current_items)
     return True
 
 
-def get_pats_data():
+def get_pats_data(next_idx = 0):
     ret_data = []
     while (True):
         # first get one page of patents
@@ -136,12 +145,28 @@ def unit_test():
     #        driver.get("http://www2.soopat.com/Home/IIndex")
     #        time.sleep(3)
     #        search_and_sort("泵浦合束器")
-    driver.get(
-        "http://www2.soopat.com/Home/Result?Sort=1&View=&Columns=&Valid=&Embed=&Db=&Ids=&FolderIds=&FolderId=&ImportPatentIndex=&Filter=&SearchWord=%E6%B3%B5%E6%B5%A6%E5%90%88%E6%9D%9F%E5%99%A8&FMZL=Y&SYXX=Y&WGZL=Y&FMSQ=Y")
+    # driver.get(
+    #     "http://www2.soopat.com/Home/Result?Sort=1&View=&Columns=&Valid=&Embed=&Db=&Ids=&FolderIds=&FolderId=&ImportPatentIndex=&Filter=&SearchWord=%E6%B3%B5%E6%B5%A6%E5%90%88%E6%9D%9F%E5%99%A8&FMZL=Y&SYXX=Y&WGZL=Y&FMSQ=Y")
+    statusStr = f0.read()
+    status_list = statusStr.split()
+    statusCode = status_list[0]
+    next_idx = 0
+    if statusCode == '0':
+        driver.get(status_list[1])
+    elif statusCode == '2':
+        print ('done handling')
+        return
+    elif statusCode == '1':
+        print ('continue downloading')
+        driver.get(status_list[1])
+        next_idx = status_list[2]
+    else:
+        print('error status code')
+
     driver.add_cookie({'name': 'suid', 'value': '6D826822BB81E47A'})
     driver.add_cookie({'name': 'sunm', 'value': 'sylph002'})
     # filename = 'pats_single_page.txt'
-    pats_data = get_pats_data()
+    pats_data = get_pats_data(next_idx)
     # write_pats_data(filename, pats_data)
     # driver.quit()
 
@@ -152,5 +177,10 @@ def unit_test():
 
 driver = webdriver.Chrome()
 # driver = webdriver.PhantomJS()
+f0 = open('status.txt', 'r+')
+# seperate by tab, the first item stands for status code 0 is the start status, 1 is downloading , 2 is done downloading
+# the second item is a url directed to the last search results page url
+# the third is the idx of the next to be handled search result
 f = open("pat_test.txt", 'a')
 unit_test()
+f.close()
