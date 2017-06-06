@@ -79,25 +79,34 @@ def get_onepage_pats(ret_data):
     #    pat_blocks = []
     pat_links_block = (driver.find_elements_by_xpath('//div[2]/h2/a'))
     handle = driver.current_window_handle
-    try:
-        for pat_link_block in pat_links_block:
-            pat_link = pat_link_block.get_attribute('href')
-            time.sleep(3)
-            pat_link_block.click()
-            handles = driver.window_handles
-            #        print(handles)
-            driver.switch_to.window(handles[1])
-            #        print(driver.current_window_handle)
-            print(driver.current_url)
-            current_items, current_ad = get_pat_data(pat_link)
-            driver.close()
-            driver.switch_to.window(handle)
-            if (current_ad.year < 2017):
-                print('%s is exceeding' % current_ad)
-                return False
-            else:
-                print(current_items)
-                ret_data.append(current_items)
+    for pat_link_block in pat_links_block:
+        pat_link = pat_link_block.get_attribute('href')
+        time.sleep(3)
+        pat_link_block.click()
+        handles = driver.window_handles
+        #        print(handles)
+        driver.switch_to.window(handles[1])
+        #        print(driver.current_window_handle)
+        print(driver.current_url)
+        current_items, current_ad = get_pat_data(pat_link)
+        # handle pat pdf download
+        download_page_elem = driver.find_element_by_xpath('/html/body/div[7]/div[1]/div/div[1]/table/tbody/tr[7]/td/div/a[2]')
+        time.sleep(2)
+        download_page_elem.click()
+        handles = driver.window_handles
+        driver.switch_to.window(handles[2])
+        download_url = driver.find_element_by_xpath('/html/body/table[1]/tbody/tr[3]/td[4]/a')
+        download_url.click()
+        driver.close()
+        driver.switch_to.window(handle[1])
+        driver.close()
+        driver.switch_to.window(handle)
+        if (current_ad.year < 2015):
+            print('%s is exceeding' % current_ad)
+            return False
+        else:
+            print(current_items)
+            ret_data.append(current_items)
     return True
 
 
